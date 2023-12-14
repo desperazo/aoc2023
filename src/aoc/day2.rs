@@ -14,6 +14,20 @@ pub fn solve() -> usize {
     ans
 }
 
+pub fn solve_2() -> i32 {
+    let data = parse();
+    let ans = data.iter().fold(0, |acc, v| {
+        let (mut blue, mut green, mut red) = (1, 1, 1);
+        for c in v.iter() {
+            blue = blue.max(c.blue);
+            green = green.max(c.green);
+            red = red.max(c.red);
+        }
+        acc + blue * green * red
+    });
+    ans
+}
+
 fn parse() -> Vec<Vec<Cube>> {
     let data = utility::read("./src/input/day2.txt");
 
