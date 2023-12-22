@@ -20,6 +20,25 @@ pub fn solve() -> usize {
     res
 }
 
+pub fn solve_2() -> u64 {
+    let raw = utility::read("./src/input/day6.txt");
+    let times = raw[0].split(':').collect::<Vec<&str>>()[1]
+        .trim()
+        .replace(' ', "")
+        .parse::<u64>()
+        .unwrap();
+    let distances = raw[1].split(':').collect::<Vec<&str>>()[1]
+        .trim()
+        .replace(' ', "")
+        .parse::<u64>()
+        .unwrap();
+    let mut offset = distances / times;
+    while (times - offset) * offset < distances {
+        offset += 1;
+    }
+    times - offset - offset + 1
+}
+
 fn parse_line(data: &str) -> Vec<i32> {
     data.split(':').collect::<Vec<&str>>()[1]
         .trim()
