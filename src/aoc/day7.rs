@@ -3,10 +3,18 @@ use std::collections::HashMap;
 use super::utility;
 
 pub fn solve() -> i32 {
+    compute_score(false)
+}
+
+pub fn solve_2() -> i32 {
+    compute_score(true)
+}
+
+fn compute_score(use_joker: bool) -> i32 {
     let raw = utility::read("./src/input/day7.txt");
     let mut cards = vec![];
     for v in raw {
-        cards.push(Card::new(&v));
+        cards.push(Card::new(&v, use_joker));
     }
     cards.sort_unstable();
     cards
@@ -21,6 +29,7 @@ struct Card {
     values: Vec<char>,
     kind: CombindKind,
     bits: i32,
+    use_joker: bool,
 }
 
 impl Ord for Card {
@@ -46,12 +55,17 @@ impl PartialOrd for Card {
 }
 
 impl Card {
-    pub fn new(data: &str) -> Self {
+    pub fn new(data: &str, use_joker: bool) -> Self {
         let v = data.split(' ').collect::<Vec<&str>>();
         let values = v[0].chars().collect::<Vec<char>>();
         let bits = v[1].parse::<i32>().unwrap();
-        let kind: CombindKind = CombindKind::new(&values);
-        Self { values, kind, bits }
+        let kind: CombindKind = CombindKind::new(&values, use_joker);
+        Self {
+            values,
+            kind,
+            bits,
+            use_joker,
+        }
     }
 
     pub fn value_of(&self, i: usize) -> i32 {
@@ -59,6 +73,7 @@ impl Card {
             'A' => 13,
             'K' => 12,
             'Q' => 11,
+            'J' if self.use_joker => 0,
             'J' => 10,
             'T' => 9,
             '9' => 8,
@@ -86,12 +101,13 @@ enum CombindKind {
 }
 
 impl CombindKind {
-    fn new(values: &[char]) -> Self {
+    fn new(values: &[char], use_joker: bool) -> Self {
         let mut maps = HashMap::new();
         values.iter().for_each(|x| {
             maps.entry(x).and_modify(|e| *e += 1).or_insert(1);
         });
-        match maps.len() {
+
+        let cmb = match maps.len() {
             1 => CombindKind::FiveOfKind,
             2 if maps.values().any(|&x| x == 1) => CombindKind::FourOfKind,
             2 => CombindKind::FullHouse,
@@ -99,6 +115,20 @@ impl CombindKind {
             3 => CombindKind::TwoPair,
             4 => CombindKind::OnePair,
             _ => Self::HighCard,
+        };
+        let joker = 'J';
+        if use_joker && maps.keys().any(|x| **x == joker) {
+            return match cmb {
+                CombindKind::FourOfKind => CombindKind::FiveOfKind,
+                CombindKind::FullHouse => CombindKind::FiveOfKind,
+                CombindKind::ThreeOfKind => CombindKind::FourOfKind,
+                CombindKind::TwoPair if maps[&joker] == 2 => CombindKind::FourOfKind,
+                CombindKind::TwoPair if maps[&joker] == 1 => CombindKind::FullHouse,
+                CombindKind::OnePair => CombindKind::ThreeOfKind,
+                CombindKind::HighCard => CombindKind::OnePair,
+                _ => cmb,
+            };
         }
+        cmb
     }
 }

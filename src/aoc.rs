@@ -88,4 +88,10 @@ mod tests {
         let ans = day7::solve();
         assert_eq!(248396258, ans);
     }
+
+    #[test]
+    fn day7_2() {
+        let ans = day7::solve_2();
+        assert_eq!(246436046, ans);
+    }
 }
