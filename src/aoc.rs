@@ -114,4 +114,10 @@ mod tests {
         let ans = day9::solve();
         assert_eq!(2175229206, ans);
     }
+
+    #[test]
+    fn day9_2() {
+        let ans = day9::solve_2();
+        assert_eq!(942, ans);
+    }
 }

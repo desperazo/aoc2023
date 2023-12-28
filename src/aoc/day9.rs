@@ -1,6 +1,17 @@
 use super::utility;
 
 pub fn solve() -> i64 {
+    predict(|acc, e| acc + e.last().unwrap())
+}
+
+pub fn solve_2() -> i64 {
+    predict(|acc, e| e.first().unwrap() - acc)
+}
+
+fn predict<F>(pred: F) -> i64
+where
+    F: Fn(i64, &[i64]) -> i64,
+{
     let input = parse();
     let mut res = vec![];
     for v in input.iter() {
@@ -12,7 +23,7 @@ pub fn solve() -> i64 {
             temp.push(diff.clone());
         }
         temp.reverse();
-        let add = temp.iter().fold(0, |acc, e| acc + e.last().unwrap());
+        let add = temp.iter().fold(0, |acc, e| pred(acc, e));
         res.push(add);
     }
     res.iter().sum()
