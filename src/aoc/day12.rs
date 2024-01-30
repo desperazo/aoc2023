@@ -1,91 +1,83 @@
+use std::{collections::HashMap, usize};
+
 use super::utility;
 
-pub fn solve() -> i32 {
-    let data = parse();
+pub fn solve() -> usize {
+    combind_count(1)
+}
+
+pub fn solve_2() -> usize {
+    combind_count(5)
+}
+
+fn combind_count(repeat: usize) -> usize {
+    let data = parse(repeat);
     data.iter()
         .map(|(txt, g)| {
-            let arr = arrange(txt.to_string());
-            match_count(arr, g)
+            let mut chs = txt.chars().collect::<Vec<_>>();
+            chs.push('.');
+            let mut mem = HashMap::new();
+            fit(&chs, 0, 0, g, &mut mem)
         })
         .sum()
 }
 
-fn arrange(txt: String) -> Vec<String> {
-    let mut set = vec![String::new()];
-    let mut c = 0;
-    let chrs = txt.chars().collect::<Vec<_>>();
-    let mut is_question = chrs[0] == '?';
-    while c < txt.len() {
-        let prev = c;
-        while c < txt.len() && (chrs[c] == '?' && is_question || !is_question && chrs[c] != '?') {
-            c += 1;
-        }
-
-        if is_question {
-            let mut tmp = vec![];
-            for s in set.iter() {
-                for n in new_strings(c - prev).iter() {
-                    let mut v = s.clone();
-                    v.push_str(n);
-                    tmp.push(v);
-                }
-            }
-            set = tmp;
-        } else {
-            let t2 = &txt[prev..c];
-            set.iter_mut().for_each(|v| v.push_str(t2));
-        }
-        is_question = !is_question;
+fn fit(
+    txt: &[char],
+    mut offset: usize,
+    grp_count: usize,
+    grp: &[usize],
+    mem: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    while offset < txt.len() && txt[offset] == '.' {
+        offset += 1;
     }
-    set
-}
-
-fn new_strings(size: usize) -> Vec<String> {
-    if size == 0 {
-        return vec![];
+    if grp.iter().sum::<usize>() + grp.len() > txt.len() - offset {
+        return 0;
     }
-    let mut res = vec![String::from("#"), String::from(".")];
-    for _ in 1..size {
-        let mut tmp = res.clone();
-        for v in res.iter_mut() {
-            v.push('#');
-        }
-        for v in tmp.iter_mut() {
-            v.push('.');
-        }
-        res.extend(tmp);
-    }
-    res
-}
-
-fn match_count(set: Vec<String>, grp: &[usize]) -> i32 {
-    let mut count = 0;
-    for s in set.iter() {
-        let tmp = s
-            .split('.')
-            .filter(|v| !v.is_empty())
-            .collect::<Vec<&str>>();
-        if tmp.len() != grp.len() {
+    let end = txt.len() - 1;
+    let mut t = 0;
+    for i in offset..end {
+        let right = i + grp[0];
+        if right >= txt.len() || txt[i] == '.' || i > 0 && txt[i - 1] == '#' || txt[right] == '#' {
             continue;
         }
-        if tmp.iter().enumerate().all(|(i, v)| v.len() == grp[i]) {
-            count += 1;
+        if txt.iter().skip(i).take(grp[0]).any(|v| *v == '.') {
+            continue;
+        }
+        if txt.iter().skip(offset).take(i - offset).any(|v| *v == '#') {
+            break;
+        }
+        if grp.len() == 1 && txt.iter().skip(i + grp[0]).any(|v| *v == '#') {
+            continue;
+        }
+
+        if grp.len() > 1 {
+            if let Some(stored) = mem.get(&(grp_count, i)) {
+                t += *stored;
+            } else {
+                let c = fit(txt, right + 1, grp_count + 1, &grp[1..], mem);
+                mem.entry((grp_count, i)).or_insert(c);
+                t += c;
+            }
+        } else {
+            t += 1;
         }
     }
-    count
+    t
 }
 
-fn parse() -> Vec<(String, Vec<usize>)> {
+fn parse(size: usize) -> Vec<(String, Vec<usize>)> {
     let raw = utility::read("./src/input/day12.txt");
     raw.iter()
         .map(|s| {
             let t = s.split(' ').collect::<Vec<&str>>();
-            (
-                t[0].to_string(),
-                t[1].split(',')
-                    .map(|v| v.parse::<usize>().unwrap())
-                    .collect(),
-            )
+            let txt = vec![t[0].to_string(); size];
+            let nums = t[1]
+                .split(',')
+                .map(|v| v.parse::<usize>().unwrap())
+                .collect::<Vec<_>>();
+            (txt.join("?"), nums.repeat(size))
         })
         .collect()
 }
