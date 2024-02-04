@@ -165,7 +165,13 @@ mod tests {
 
     #[test]
     fn day13() {
-        let ans = day13::solve();
+        let ans = day13::solve(false);
         assert_eq!(37975, ans);
+    }
+
+    #[test]
+    fn day13_2() {
+        let ans = day13::solve(true);
+        assert_eq!(32497, ans);
     }
 }

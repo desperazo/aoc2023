@@ -1,47 +1,53 @@
+use std::ops::Sub;
+
 use super::utility;
 
-pub fn solve() -> usize {
+pub fn solve(allow_fix: bool) -> usize {
     let mirrors = parse();
     let mut score = 0;
     for m in mirrors {
-        if let Some(v) = hor_score(&m) {
+        if let Some(v) = find_mirror(allow_fix, m.len(), |lower: usize, upper| {
+            m[lower]
+                .iter()
+                .zip(m[upper].iter())
+                .map(|(l, r)| if l == r { 0 } else { 1 })
+                .sum::<usize>()
+        }) {
             score += v * 100;
-        } else if let Some(v) = ver_score(&m) {
+        } else if let Some(v) = find_mirror(allow_fix, m[0].len(), |lower: usize, upper| {
+            m.iter()
+                .map(|v: &Vec<Mirror>| if v[lower] == v[upper] { 0 } else { 1 })
+                .sum::<usize>()
+        }) {
             score += v;
         }
     }
     score
 }
 
-fn ver_score(data: &[Vec<Mirror>]) -> Option<usize> {
+fn find_mirror<F>(allow_fix: bool, max_len: usize, differ: F) -> Option<usize>
+where
+    F: Fn(usize, usize) -> usize,
+{
     let mut start = 0;
-    while start < data[0].len() - 1 {
-        let mut exp = 0;
-        while start.checked_sub(exp).is_some()
-            && start + exp + 1 < data[0].len()
-            && data.iter().all(|v| v[start - exp] == v[start + exp + 1])
-        {
-            exp += 1;
+    while start < max_len - 1 {
+        let target = (start + 1).min(max_len.sub(start + 1));
+        let mut expand = 0;
+        let mut fix_count = if allow_fix { 1 } else { 0 };
+        while expand < target {
+            let lower = start - expand;
+            let upper = start + expand + 1;
+            let dif = differ(lower, upper);
+            if dif == 0 || dif == 1 && fix_count > 0 {
+                expand += 1;
+                if dif > 0 {
+                    fix_count -= 1;
+                }
+            } else {
+                break;
+            }
         }
-        if exp > 0 && (exp == start + 1 || start + exp + 1 == data[0].len()) {
-            return Some(start + 1);
-        }
-        start += 1;
-    }
-    None
-}
-
-fn hor_score(data: &[Vec<Mirror>]) -> Option<usize> {
-    let mut start = 0;
-    while start < data.len() - 1 {
-        let mut exp = 0;
-        while start.checked_sub(exp).is_some()
-            && start + exp + 1 < data.len()
-            && data[start - exp] == data[start + exp + 1]
-        {
-            exp += 1;
-        }
-        if exp > 0 && (exp == start + 1 || start + exp + 1 == data.len()) {
+        if expand == target && fix_count == 0 {
             return Some(start + 1);
         }
         start += 1;
