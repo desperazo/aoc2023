@@ -206,6 +206,12 @@ mod tests {
     #[test]
     fn day16() {
         let ans = day16::solve();
-        assert_eq!(46, ans);
+        assert_eq!(6816, ans);
+    }
+
+    #[test]
+    fn day16_2() {
+        let ans = day16::solve_2();
+        assert_eq!(8163, ans);
     }
 }
