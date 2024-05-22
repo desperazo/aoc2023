@@ -7,6 +7,7 @@ pub mod day14;
 pub mod day15;
 pub mod day16;
 pub mod day17;
+pub mod day18;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -16,12 +17,11 @@ pub mod day7;
 pub mod day8;
 pub mod day9;
 pub mod utility;
-
 #[cfg(test)]
 mod tests {
     use crate::aoc::{
-        day1, day10, day11, day12, day13, day14, day15, day16, day17, day2, day3, day4, day5, day6,
-        day7, day8, day9,
+        day1, day10, day11, day12, day13, day14, day15, day16, day17, day18, day2, day3, day4,
+        day5, day6, day7, day8, day9,
     };
 
     #[test]
@@ -226,5 +226,11 @@ mod tests {
     fn day17_2() {
         let ans = day17::solve_2();
         assert_eq!(1165, ans);
+    }
+
+    #[test]
+    fn day18() {
+        let ans = day18::solve();
+        assert_eq!(35244, ans);
     }
 }
