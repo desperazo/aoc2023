@@ -3,12 +3,50 @@ pub fn solve() -> i32 {
     data.accepted_value()
 }
 
+pub fn solve_2() -> usize {
+    let data = parse();
+    let mut parts = [(1,4000), (1,4000), (1,4000), (1,4000)];
+    let ans = data.range_acceptable("in", &mut parts);
+    ans
+}
+
 struct Instruction {
     workflows: HashMap<String, Workflow>,
     parts: Vec<Vec<(Cat, i32)>>,
 }
 
 impl Instruction {
+    fn range_acceptable(&self, label: &str, parts: &mut [(i32, i32); 4]) -> usize {
+        if label == "A" {
+            return parts.iter().map(|&(l,r)| r.abs_diff(l) as usize + 1).product();
+        }
+        if label == "R" {
+            return 0;
+        }
+        let f = &self.workflows[label];
+        let mut total = 0;
+        for r in f.rules.iter() {
+            let i = r.cat.to_index();
+            if r.greater {
+                if r.value > parts[i].0 {
+                    let mut gt = *parts;
+                    gt[i].0 = r.value + 1;
+                    parts[i].1 = r.value;
+                    total += self.range_acceptable(&r.label, &mut gt);
+                }
+            } else {
+                if r.value < parts[i].1 {
+                    let mut lt = *parts;
+                    lt[i].1 = r.value - 1;
+                    parts[i].0 = r.value;
+                    total += self.range_acceptable(&r.label, &mut lt);
+                }
+            }
+        }
+        total += self.range_acceptable(&f.last_label, parts);
+        total
+    }
+
     fn accepted_value(&self) -> i32 {
         self.parts
             .iter()
@@ -73,6 +111,17 @@ enum Cat {
     s,
 }
 
+impl Cat {
+    fn to_index(self) -> usize {
+        match self {
+            Cat::x => 0,
+            Cat::m => 1,
+            Cat::a => 2,
+            Cat::s => 3,
+        }
+    }
+}
+
 impl FromStr for Cat {
     type Err = ();
     fn from_str(value: &str) -> Result<Cat, Self::Err> {
@@ -86,7 +135,11 @@ impl FromStr for Cat {
     }
 }
 
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::{btree_map::Range, HashMap},
+    ops::RangeInclusive,
+    str::FromStr,
+};
 
 use super::utility;
 fn parse() -> Instruction {
