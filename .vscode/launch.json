@@ -38,6 +38,7 @@
                     "kind": "bin"
                 }
             },
+            "console": "externalTerminal",
             "args": [],
             "cwd": "${workspaceFolder}"
         }
