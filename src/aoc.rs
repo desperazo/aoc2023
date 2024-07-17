@@ -260,4 +260,10 @@ mod tests {
         let ans = day20::solve();
         assert_eq!(666795063, ans);
     }
+
+    #[test]
+    fn day20_2() {
+        let ans = day20::solve_2();
+        assert_eq!(253302889093151, ans);
+    }
 }

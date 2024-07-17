@@ -27,6 +27,53 @@ pub fn solve() -> usize {
     low_count * high_count
 }
 
+pub fn solve_2() -> u128 {
+    let mut modules = parse();
+    let mut queue = VecDeque::new();
+    queue.push_back(("".to_string(), BROADCASTER.to_string(), false));
+    let mut df_input = HashMap::new();
+    'outer: for i in 1..10000 {
+        while let Some((sender, receiver, pulse)) = queue.pop_front() {
+            match modules.get_mut(&receiver) {
+                Some(m) => {
+                    if let Some(new_pulse) = m.process(sender, pulse) {
+                        for con in m.connections.iter() {
+                            queue.push_back((receiver.clone(), con.to_string(), new_pulse));
+                        }
+                    }
+                    if pulse && receiver == "df" {
+                        m.input.iter().filter(|(_n, v)| **v).for_each(|(n, _v)| {
+                            df_input.entry(n.clone()).or_insert(i);
+                        });
+                        if df_input.len() == m.input.len() {
+                            break 'outer;
+                        }
+                    }
+                }
+                None => (),
+            }
+        }
+        queue.push_back(("".to_string(), BROADCASTER.to_string(), false));
+    }
+    df_input
+        .values()
+        .map(|v| *v)
+        .reduce(|acc, e| lcm(acc, e))
+        .unwrap()
+}
+
+fn gcd(a: u128, b: u128) -> u128 {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+fn lcm(a: u128, b: u128) -> u128 {
+    a * b / gcd(a, b)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ModuleKind {
     FlipFlop,
