@@ -1,6 +1,14 @@
-const SIZE: usize = 10;
-type Cube = [[usize; SIZE]; SIZE];
 pub fn solve() -> usize {
+    let bucket = new_bucket();
+    bucket.disintegrate_count()
+}
+
+pub fn solve_2() -> usize {
+    let bucket = new_bucket();
+    bucket.chain_count()
+}
+
+fn new_bucket() -> Bucket {
     let mut input = parse();
     input.sort_by(|a, b| a.pos1.z.cmp(&b.pos1.z));
     let mut bucket = Bucket {
@@ -10,7 +18,7 @@ pub fn solve() -> usize {
     for b in input.iter_mut() {
         bucket.falling_down(b.clone());
     }
-    bucket.disintegrate_count()
+    bucket
 }
 
 struct Bucket {
@@ -19,6 +27,42 @@ struct Bucket {
 }
 
 impl Bucket {
+    fn chain_count(mut self) -> usize {
+        self.bricks.sort_by(|a, b| a.id.cmp(&b.id));
+        let mut queue = VecDeque::new();
+        for b in self.bricks.iter() {
+            if b.supporting.is_empty() {
+                continue;
+            }
+            if b.supporting
+                .iter()
+                .any(|s| self.bricks.get(*s - 1).unwrap().supported_count == 1)
+            {
+                queue.push_back(b.id);
+            }
+        }
+        let mut count = 0;
+        while let Some(q) = queue.pop_front() {
+            let mut supported_count = HashMap::new();
+            let mut chain = VecDeque::new();
+            chain.push_front(q);
+            while let Some(f) = chain.pop_front() {
+                let cur = self.bricks.get(f - 1).unwrap();
+                for chd in cur.supporting.iter() {
+                    let ent = supported_count
+                        .entry(chd)
+                        .and_modify(|e| *e -= 1)
+                        .or_insert(self.bricks.get(*chd - 1).unwrap().supported_count - 1);
+                    if ent == &0 {
+                        chain.push_back(*chd);
+                        count += 1;
+                    }
+                }
+            }
+        }
+        count
+    }
+
     fn disintegrate_count(self) -> usize {
         let mut count = 0;
         for b in self.bricks.iter().rev() {
@@ -64,7 +108,6 @@ struct Brick {
     id: usize,
     pos1: Coord,
     pos2: Coord,
-    direction: Axis,
     supported_count: u32,
     supporting: Vec<usize>,
 }
@@ -75,7 +118,6 @@ impl Default for Brick {
             id: 0,
             pos1: Coord { x: 0, y: 0, z: 0 },
             pos2: Coord { x: 0, y: 0, z: 0 },
-            direction: Axis::non,
             supported_count: 0,
             supporting: Vec::new(),
         }
@@ -88,15 +130,6 @@ impl Brick {
             id,
             pos1,
             pos2,
-            direction: if pos1.x != pos2.x {
-                Axis::x
-            } else if pos1.y != pos2.y {
-                Axis::y
-            } else if pos1.z != pos2.z {
-                Axis::z
-            } else {
-                Axis::non
-            },
             supported_count: 0,
             supporting: Vec::new(),
         }
@@ -136,15 +169,10 @@ struct Coord {
     z: usize,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Axis {
-    x,
-    y,
-    z,
-    non,
-}
-
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, VecDeque},
+    env::var,
+};
 
 use super::utility;
 fn parse() -> Vec<Brick> {
@@ -174,15 +202,6 @@ fn parse() -> Vec<Brick> {
                     y: right[1].to_string().parse().unwrap(),
                     z: right[2].to_string().parse().unwrap(),
                 },
-                direction: if left[0] != right[0] {
-                    Axis::x
-                } else if left[1] != right[1] {
-                    Axis::y
-                } else if left[2] != right[2] {
-                    Axis::z
-                } else {
-                    Axis::non
-                },
                 ..Default::default()
             };
             Some(brick)
@@ -198,14 +217,12 @@ mod tests {
         let a = Brick {
             pos1: Coord { x: 1, y: 0, z: 1 },
             pos2: Coord { x: 1, y: 2, z: 1 },
-            direction: Axis::y,
             supported_count: 0,
             ..Default::default()
         };
         let b = Brick {
             pos1: Coord { x: 0, y: 0, z: 2 },
             pos2: Coord { x: 2, y: 0, z: 2 },
-            direction: Axis::x,
             supported_count: 0,
             ..Default::default()
         };
