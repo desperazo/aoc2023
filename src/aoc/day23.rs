@@ -1,9 +1,17 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 const SIZE: usize = 141;
 type Map = [[Tile; SIZE]; SIZE];
 type Pos = (usize, usize);
 
 pub fn solve() -> usize {
+    longest_path(true)
+}
+
+pub fn solve_2() -> usize {
+    longest_path(false)
+}
+
+fn longest_path(follow_slop: bool) -> usize {
     let goal = (SIZE - 2, SIZE - 1);
     let map = parse();
     let mut queue = VecDeque::new();
@@ -12,39 +20,73 @@ pub fn solve() -> usize {
         seen: HashSet::from([(1, 0)]),
         steps: 0,
     });
+    let graph = build_graph(&map, follow_slop);
     let mut max_steps = 0;
-    while let Some(mut walker) = queue.pop_front() {
-        if walker.pos == goal {
-            println!("GOAL: {}", walker.steps);
-            max_steps = max_steps.max(walker.steps);
+    while let Some(w) = queue.pop_front() {
+        if w.pos == goal {
+            max_steps = max_steps.max(w.steps);
             continue;
         }
-        // print_running(&map, &walker.seen);
-        queue.extend(walker.next(&map));
+        if let Some(v) = graph.get(&w.pos) {
+            for (n, d) in v.iter() {
+                let mut wn = w.clone();
+                if !wn.seen.insert(*n) {
+                    continue;
+                }
+                wn.pos = *n;
+                wn.steps += d;
+                queue.push_front(wn);
+            }
+        }
     }
     max_steps
 }
 
-fn print_running(map: &Map, running: &HashSet<Pos>) {
-    for y in 0..SIZE {
-        for x in 0..SIZE {
-            if running.contains(&(x, y)) {
-                print!("O");
-            } else {
-                match map[y][x] {
-                    Tile::Path => print!("."),
-                    Tile::Forest => print!("#"),
-                    Tile::Slope(Direction::Up) => print!("^"),
-                    Tile::Slope(Direction::Down) => print!("v"),
-                    Tile::Slope(Direction::Left) => print!("<"),
-                    Tile::Slope(Direction::Right) => print!(">"),
-                }
-            }
+fn build_graph(map: &Map, follow_slop: bool) -> HashMap<Pos, Vec<(Pos, usize)>> {
+    let mut nodes = vec![];
+    let mut seen = HashSet::new();
+    let mut queue = VecDeque::new();
+    let start = Walker {
+        pos: (1, 0),
+        seen: HashSet::from([(1, 0)]),
+        steps: 0,
+    };
+    nodes.push(start.clone());
+    queue.push_front(start);
+    while let Some(mut walker) = queue.pop_front() {
+        if !seen.insert(walker.pos) {
+            continue;
         }
-        println!();
+        let next = walker.next(&map, follow_slop);
+        let size = next.len();
+        if size > 1 || walker.pos == (SIZE - 2, SIZE - 1) {
+            nodes.push(walker);
+        }
+        for n in next.iter() {
+            queue.push_front(n.clone());
+        }
     }
-    println!();
-    println!();
+    let mut graph: HashMap<Pos, Vec<(Pos, usize)>> = HashMap::new();
+    for w in nodes.iter_mut() {
+        w.steps = 0;
+        w.seen.clear();
+        w.seen.insert(w.pos);
+        for mut n in w.next(&map, follow_slop) {
+            loop {
+                let test = n.next(&map, follow_slop);
+                if test.len() == 1 {
+                    n = test[0].clone();
+                    continue;
+                }
+                break;
+            }
+            graph
+                .entry(w.pos)
+                .and_modify(|e| e.push((n.pos, n.steps)))
+                .or_insert(vec![(n.pos, n.steps)]);
+        }
+    }
+    graph
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,7 +97,7 @@ struct Walker {
 }
 
 impl Walker {
-    fn next(&mut self, map: &Map) -> Vec<Self> {
+    fn next(&mut self, map: &Map, follow_slop: bool) -> Vec<Self> {
         let mut next = Vec::new();
         let (x, y) = self.pos;
         let dir = vec![0, 1, 2, 3]
@@ -76,13 +118,14 @@ impl Walker {
             if !self.seen.insert((nx, ny)) {
                 continue;
             }
+
             match map[y][x] {
-                Tile::Slope(d) if d == nd => next.push(Self {
+                Tile::Slope(d) if d == nd && follow_slop => next.push(Self {
                     pos: (nx, ny),
                     seen: self.seen.clone(),
                     steps: self.steps + 1,
                 }),
-                Tile::Slope(_) => continue,
+                Tile::Slope(_) if follow_slop => continue,
                 _ => next.push(Self {
                     pos: (nx, ny),
                     seen: self.seen.clone(),
