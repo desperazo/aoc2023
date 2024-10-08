@@ -310,6 +310,12 @@ mod tests {
     #[test]
     fn day24() {
         let ans = day24::solve();
-        assert_eq!(2, ans);
+        assert_eq!(16018, ans);
+    }
+
+    #[test]
+    fn day24_2() {
+        let ans = day24::solve_2();
+        assert_eq!(1004774995964535.0, ans);
     }
 }
