@@ -18,6 +18,11 @@ pub fn solve() -> usize {
     ans
 }
 
+pub fn solve_2() -> usize {
+    let input = parse();
+    0
+}
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct Hailstone {
     position: Position,
@@ -31,6 +36,10 @@ impl Hailstone {
         let fw_x = dx > 0.0 && self.velocity.x > 0.0 || dx < 0.0 && self.velocity.x < 0.0;
         let fw_y = dy > 0.0 && self.velocity.y > 0.0 || dy < 0.0 && self.velocity.y < 0.0;
         fw_x && fw_y
+    }
+
+    fn predict_z(self, time: f64, delta_vz: f64) -> f64 {
+        self.position.z + time * (self.velocity.z + delta_vz)
     }
 }
 
